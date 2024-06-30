@@ -1,4 +1,5 @@
 import re 
+from django.contrib.auth.password_validation import validate_password 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers 
 
@@ -119,3 +120,57 @@ class SignUpSerializer(serializers.ModelSerializer):
 class SignInSerializer(serializers.Serializer):
 	login_id = serializers.CharField(max_length=40, required=True)
 	password = serializers.CharField(required=True)
+
+
+# password change serializer
+class ChangePasswordSerializer(serializers.Serializer):
+	old_password = serializers.CharField(required=True)
+	new_password = serializers.CharField(required=True)
+	new_password_again = serializers.CharField(required=True)
+
+	# validate data 
+	def validate(self, data):
+		errors = {}
+		user = self.context['request'].user 
+		old_password = data.get("old_password")
+		new_password = data.get("new_password")
+		new_password_again = data.get("new_password_again")
+
+		if not user.check_password(old_password):
+			errors["old_password"] = "Old password is not correct"
+
+		if new_password is None or not new_password.strip():
+			errors["password_value"] = "Passwords cannot be empty or filled with white space only"
+
+		if len(new_password) < 8:
+			errors["password_length"] = "Passwords must be at least 8 characters"
+
+		if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", new_password):
+			errors["password_character"] = "Passwords must contain at least one special character"
+
+		if not any(p.isupper() for p in new_password):
+			errors["password_uppercase"] = "Passwords must contain at least one uppercase letter"
+
+		if not any(p.islower() for p in new_password):
+			errors["password_lowercase"] = "Passwords must contain at least one lowercase letter"
+
+		if not any(p.isdigit() for p in new_password):
+			errors["password_digit"] = "Passwords must contain at least one number"
+
+		if new_password != new_password_again:
+			errors["password_match"] = "Both passwords must match"
+
+		if errors:
+			password_error = {"password": [errors]}
+			raise serializers.ValidationError(password_error)
+
+		return data 
+
+
+		# save data 
+		def save(self):
+			user = self.context['request'].user 
+			user.set_password(self.validated_data["new_password"])
+			user.save()
+			
+			return user 
