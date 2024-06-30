@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response 
 from rest_framework_simplejwt.tokens import RefreshToken 
 
-from .serializers import SignUpSerializer, SignInSerializer
+from .serializers import SignUpSerializer, SignInSerializer, ChangePasswordSerializer
 from .database import database 
 
 User = get_user_model()
@@ -223,7 +223,32 @@ class SignOutRequest(APIView):
 				})
 
 
+# change password view 
+class ChangePasswordRequest(APIView):
 
+	permission_classes = [permissions.IsAuthenticated, ]
+	serializer_class = ChangePasswordSerializer
 
+	async def post(self, request):
+		serializer = self.serializer_class(data=request.data)
+
+		if serializer.is_valid(raise_exception=True):
+			async with database.transaction():
+				await asyncio.to_thread(serializer.save)
+
+			return Response({
+				"status": "success",
+				"status_code": status.HTTP_200_OK,
+				"details": "Password changed successfully."
+			})
+
+		else:
+			# return error response 
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_400_BAD_REQUEST,
+				"details": serializer.errors,
+				"error_message": "Request failed. Invalid data format."
+			})
 
 
