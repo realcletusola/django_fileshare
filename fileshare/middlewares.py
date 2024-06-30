@@ -17,11 +17,9 @@ class DatabaseMiddleware:
 	async def __call__(self, scope, receive, send):
 		
 		if scope['type'] == 'lifespan':
-			
 			while True:
-				
 				message = await receive()
-
+				
 				if message['type'] == 'lifespan.startup':
 					await database.connect()
 					await send({'type': 'lifespan.startup.complete'})
