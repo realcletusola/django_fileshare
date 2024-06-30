@@ -20,5 +20,5 @@ class CustomUserAdmin(UserAdmin): # custom user admin display
     ordering = ('username', 'email',)
     search_fields = ['username', 'email']
 
-admin.site.register(CustomUser,CustomeUserAdmin)
+admin.site.register(CustomUser,CustomUserAdmin)
 
