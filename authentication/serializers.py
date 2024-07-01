@@ -6,12 +6,6 @@ from rest_framework import serializers
 User = get_user_model()
 
 
-# user serializer 
-class UserSerializer(serializers.ModelSerializer):
-	class Meta:
-		model = User 
-		fields = ['id', 'username', 'email']
-
 # registration serializer
 class SignUpSerializer(serializers.ModelSerializer):
 	username = serializers.CharField(required=True)
