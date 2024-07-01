@@ -39,7 +39,7 @@ class FileOperation(models.Model):
 		('recieved', 'recieved')
 	)
 
-	file = models.OneToOneField(File, on_delete=models.CASCADE, related_name='file')
+	file = models.OneToOneField(File, on_delete=models.CASCADE, related_name='file_operation')
 	sender = models.OneToOneField(User, on_delete=models.CASCADE, related_name='file_sender')
 	reciever = models.OneToOneField(User, on_delete=models.CASCADE, related_name='file_reciever')
 	operation = models.CharField(choices=operation_type, default='send', max_length=15)
@@ -49,7 +49,7 @@ class FileOperation(models.Model):
 		return self.file
 
 	class Meta:
-		ordering = ['-date_sent']
+		ordering = ['-date']
 
 
 
