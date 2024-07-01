@@ -13,6 +13,7 @@ from .serializers import (
 	FileOperationSerializer, UserSerializer
 )
 from fileshare.database import database 
+from .models import Profile, File, FileOperation
 
 User = get_user_model()
 
@@ -213,7 +214,7 @@ class UserRequest(APIView):
 			raise Http404("User does not exist")
 
 		except Exception as e:
-			logger.error(f"An error occurred on user user queryset: {e}", exc_info=True)
+			logger.error(f"An error occurred on user queryset: {e}", exc_info=True)
 			return Response({
 				"status": "error",
 				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -376,3 +377,119 @@ class UserDetailRequest(APIView):
 			})
 
 
+
+# file view 
+class FileRequest(APIView):
+	permissions_classes = [permissions.IsAuthenticated, ]
+	parser_classes = [MultiPartParser, FormParser, ]
+	serializer_class = FileSerializer
+
+
+	# file queryset to get file based on the permissions of the user 
+	async def get_queryset(self):
+		user = self.request.user 
+		try:
+			if user.is_staff or user.is_superuser:
+				return await asyncio.to_thread(File.objects.all)
+
+			file = await asyncio.to_thread(File.objects.get, user=user)
+			return file
+
+		except File.DoesNotExist:
+			raise Http404("File does not exist")
+
+		except Exception as e:
+			logger.error(f"An error occurred on file queryset: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred in getting user object."
+			})
+
+	# get file 
+	async def get(self, request):
+		try:
+			file = await self.get_queryset()
+			serializer = self.serializer_class(file, many=True if isinstance(file, list) else False)
+			return Response({
+				"status": "success",
+				"status_code": status.HTTP_200_OK,
+				"details": "File fetched.",
+				"data": serializer.data 
+			})
+
+		except Exception as e:
+			logger.error(f"An error occured when trying to get file object: {e}", exc_info=True)
+			return Response({
+				"status":"error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later."
+			})
+
+
+	# create file 
+	async def post(self, request):
+		try:
+			serializer = self.serializer_class(data=request.data)
+			if serializer.is_valid(raise_exception=True):
+				async with database.transaction():
+					await asyncio.to_thread(serializer.save(user=self.request.user))
+				return Response({
+					"status": "success",
+					"status_code": status.HTTP_201_CREATED,
+					"details": "File Uploaded."
+				})
+
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_400_BAD_REQUEST,
+				"details": serializer.errors,
+				"error_message": "Unable to upload file"
+			})
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to upload file: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later"
+			})
+
+
+# file detail view 
+class FileDetailRequest(APIView):
+
+	# get file object
+	async def get_object(self, pk):
+		try:
+			return await asyncio.to_thread(File.objects.get, pk=pk)
+
+		except File.DoesNotExist:
+			raise Http404("File does not exist")
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to query file object: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred when trying to get user object."
+			})
+
+	# delete file
+	async def delete(self, request, pk):
+		try:
+			file = await self.get_object(pk)
+			file.delete()
+			return Response({
+				"status": "success",
+				"status_code": status.HTTP_204_NO_CONTENT,
+				"details": "File deleted."
+			})
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to delete file: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later"
+			})
