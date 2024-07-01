@@ -191,3 +191,188 @@ class ProfileDetailRequest(APIView):
 				"status_code": HTTP_500_INTERNAL_SERVER_ERROR,
 				"details": "An error occurred. Please try again later"
 			})
+
+
+
+# user view 
+class UserRequest(APIView):
+	permissions_classes = [permissions.IsAuthenticated, ]
+	serializer_class = UserSerializer
+
+	# user queryset to get user based on the permissions of the user 
+	async def get_queryset(self):
+		user = self.request.user 
+		try:
+			if user.is_staff or user.is_superuser:
+				return await asyncio.to_thread(User.objects.all)
+
+			user_object = await asyncio.to_thread(User.objects.get, username__iexact=user.username)
+			return user_object
+
+		except User.DoesNotExist:
+			raise Http404("User does not exist")
+
+		except Exception as e:
+			logger.error(f"An error occurred on user user queryset: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred in getting user object."
+			})
+
+
+	async def get(self, request):
+		try:
+			user = await self.get_queryset()
+			serializer = self.serializer_class(user, many=True if isinstance(user, list) else False)
+			return Response({
+				"status": "success",
+				"status_code": status.HTTP_200_OK,
+				"details": "User fetched.",
+				"data": serializer.data 
+			})
+
+		except Exception as e:
+			logger.error(f"An error occured when trying to get user object: {e}", exc_info=True)
+			return Response({
+				"status":"error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later."
+			})
+
+
+# user detail view
+class UserDetailRequest(APIView):
+	permissions_classes = [permissions.IsAuthenticated, ]
+	serializer_class = UserSerializer
+
+	# get user object
+	async def get_object(self, pk):
+		try:
+			return await asyncio.to_thread(User.objects.get, pk=pk)
+
+		except User.DoesNotExist:
+			raise Http404("User does not exist")
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to query user object: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred when trying to get user object."
+			})
+
+	# get user details 
+	async def get(self, request, pk):
+		try:
+			user = await self.get_object(pk)
+			serializer = self.serializer_class(user)
+			return Response({
+				"status": "success",
+				"status_code": status.HTTP_200_OK,
+				"details": "User details fetched."
+				"data": serializer.data
+			})
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to get user details: {e}". exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later."
+			})
+
+
+	# update user with PUT method 
+	async def put(self, request, pk):
+		try:
+			user = await self.get_object(pk)
+			serializer = self.serializer_class(user, data=request.data, context={'request':request}, partail=True)
+
+			if serializer.is_valid(raise_exception=True):
+				async with database.transaction():
+					await asyncio.to_thread(serializer.save)
+
+				return Response({
+					"status": "success",
+					"status_code": status.HTTP_201_CREATED,
+					"details": "User updated."
+				})
+
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_400_BAD_REQUEST,
+				"details": serializer.errors,
+				"error_message": "Unable to update user details."
+			})
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to update user using the PUT method: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later."
+			})
+
+
+	# update user with PATCH method 
+	async def patch(self, request, pk):
+		try:
+			user = await self.get_object(pk)
+			serializer = self.serializer_class(user, data=request.data, context={'request':request})
+
+			if serializer.is_valid(raise_exception=True):
+				async with database.transaction():
+					await asyncio.to_thread(serializer.save)
+
+				return Response({
+					"status": "success",
+					"status_code": status.HTTP_201_CREATED,
+					"details": "User updated."
+				})
+
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_400_BAD_REQUEST,
+				"details": serializer.errors,
+				"error_message": "Unable to update user details."
+			})
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to update user profile using the PATCH method: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later."
+			})
+
+
+	# delete user
+	async def delete(self, request, pk):
+		try:
+			user = self.request.user 
+
+			if user.is_staff or user.is_superuser:
+				user = await self.get_object(pk)
+				user.delete()
+				return Response({
+					"status": "success",
+					"status_code": status.HTTP_204_NO_CONTENT,
+					"details": "User deleted."
+				})
+
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_401_UNAUTHORIZED,
+				"details": "You are not authorized to delete user account. Please contact support if you want your account deleted."
+			})
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to delete user account: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later"
+			})
+
+
