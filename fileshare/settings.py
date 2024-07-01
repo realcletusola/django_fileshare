@@ -3,6 +3,7 @@ from pathlib import Path
 
 from .drf_settings import * 
 from .db_settings import *
+from .log_settings import * 
 
 
 
