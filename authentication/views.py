@@ -138,11 +138,11 @@ class SignInRequest(APIView):
 				})
 
 			except User.DoesNotExist:
-                return Response({
-                    "status": "error",
-                    "status_code": status.HTTP_401_UNAUTHORIZED,
-                    "details": "Invalid login credentials."
-                })
+				return Response({
+					"status": "error",
+					"status_code": status.HTTP_401_UNAUTHORIZED,
+					"details": "Invalid login credentials."
+				})
 
 			except Exception as e:
 				logger.error(f"An error occured in user signin request: {e}", exc_info=True)
@@ -216,13 +216,12 @@ class SignOutRequest(APIView):
 			})
 
 		except Exception as e:
-			except Exception as e:
-				logger.error(f"An error occurred in user signout request: {e}", exc_info=True)
-				return Response({
-					"status":"error",
-					"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
-					"details": "An error occurred. Please try again later."
-				})
+			logger.error(f"An error occurred in user signout request: {e}", exc_info=True)
+			return Response({
+				"status":"error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later."
+			})
 
 
 # change password view 
