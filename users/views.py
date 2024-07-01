@@ -8,7 +8,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response 
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from .serializers import ProfileSerializer, FileSerializer, FileOperationSerializer
+from .serializers import (
+	ProfileSerializer, FileSerializer,
+	FileOperationSerializer, UserSerializer
+)
 from fileshare.database import database 
 
 User = get_user_model()
@@ -114,7 +117,7 @@ class ProfileDetailRequest(APIView):
 
 			if serializer.is_valid(raise_exception=True):
 				async with database.transaction():
-					await asyncio.to_thread(serializer.save)
+					await asyncio.to_thread(serializer.save(user=self.request.user))
 
 				return Response({
 					"status": "success",
@@ -146,7 +149,7 @@ class ProfileDetailRequest(APIView):
 
 			if serializer.is_valid(raise_exception=True):
 				async with database.transaction():
-					await asyncio.to_thread(serializer.save)
+					await asyncio.to_thread(serializer.save(user=self.request.user))
 
 				return Response({
 					"status": "success",
