@@ -4,7 +4,7 @@ from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
-    SignUpRequest,SignInRequest,SignOutRequest
+    SignUpRequest,SignInRequest,SignOutRequest,
     ChangePasswordRequest
 )
 
