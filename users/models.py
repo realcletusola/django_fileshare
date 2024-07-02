@@ -33,16 +33,9 @@ class File(models.Model):
 
 # file operation model
 class FileOperation(models.Model):
-
-	operation_type = (
-		('send','send'),
-		('recieved', 'recieved')
-	)
-
 	file = models.OneToOneField(File, on_delete=models.CASCADE, related_name='file_operation')
 	sender = models.OneToOneField(User, on_delete=models.CASCADE, related_name='file_sender')
-	reciever = models.OneToOneField(User, on_delete=models.CASCADE, related_name='file_reciever')
-	operation = models.CharField(choices=operation_type, default='send', max_length=15)
+	receiver = models.OneToOneField(User, on_delete=models.CASCADE, related_name='file_reciever')
 	date = models.DateTimeField(auto_now_add=True)
 
 	def __str__(self):
