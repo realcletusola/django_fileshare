@@ -132,9 +132,9 @@ class ChangePasswordSerializer(serializers.Serializer):
 	def validate(self, data):
 		errors = {}
 		user = self.context['request'].user 
-		old_password = data.get("old_password")
-		new_password = data.get("new_password")
-		new_password_again = data.get("new_password_again")
+		old_password = self.data.get("old_password")
+		new_password = self.data.get("new_password")
+		new_password_again = self.data.get("new_password_again")
 
 		if not user.check_password(old_password):
 			errors["old_password"] = "Old password is not correct"
