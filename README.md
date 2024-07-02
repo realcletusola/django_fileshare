@@ -24,4 +24,4 @@ Setup Instructions
 		Clone the repository.
 		Install the required dependencies.
 		Configure the database and environment variables.
-		Run the migrations and start the development server.
+		Run the migrations and start the development server with "uvicorn fileshare.asgi:application --reload".
