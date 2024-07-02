@@ -493,3 +493,144 @@ class FileDetailRequest(APIView):
 				"status_code": HTTP_500_INTERNAL_SERVER_ERROR,
 				"details": "An error occurred. Please try again later"
 			})
+
+
+# file operation view 
+class FileOperationRequest(APIView):
+	permissions_classes = [permissions.IsAuthenticated, ]
+	parser_classes = [MultiPartParser, FormParser, ]
+	serializer_class = FileOperationSerializer
+
+
+	async def post(self, request):
+		try:
+			serializer = self.serializer_class(data=request.data, context={'request':request})
+
+			if serializer.is_valid(raise_exception=True):
+				file = serializer.validated_data['file']
+				receiver = serializer.validated_data['receiver']
+				
+				async with database.transaction():
+					await asyncio.to_thread(serializer.save)
+
+				return Response({
+					"status": "success",
+					"status_code": status.HTTP_200_OK,
+					"details": f"File sent to {receiver}."
+				})			
+
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_400_BAD_REQUEST,
+				"details": serializer.errors,
+				"error_message": "Error sending file."
+			})
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to send file: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later."
+			})
+
+
+# get all sent file 
+class SentFileRequest(APIView):
+	permissions_classes = [permissions.IsAuthenticated, ]
+	serializer_class = FileOperationSerializer
+
+	# get_queryset
+	async def get_queryset(self):
+		user = self.request.user 
+
+		try:
+			if user.is_staff or user.is_superuser:
+				return await asyncio.to_thread(FileOperation.objects.all)
+
+			files = await asyncio.to_thread(FileOperation.objects.get, sender=user)
+			return files 
+
+		except FileOperation.DoesNotExist:
+			return Http404("The requested info does not exist")
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to get file operation object: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later"
+			})
+
+	# get file operation data
+	async def get(self, request):
+		try:
+			files = self.get_queryset()
+			serializer = self.serializer_class(files, many=True if isinstance(files, list) else False)
+
+			return Response({
+				"status": "success",
+				"status_code": status.HTTP_200_OK,
+				"details": "Info fetched.",
+				"data": serializer.data
+			})
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to get file operation info: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please trying again later."
+			})
+
+
+
+
+# get all received file 
+class ReceivedFileRequest(APIView):
+	permissions_classes = [permissions.IsAuthenticated, ]
+	serializer_class = FileOperationSerializer
+
+	# get_queryset
+	async def get_queryset(self):
+		user = self.request.user 
+
+		try:
+			if user.is_staff or user.is_superuser:
+				return await asyncio.to_thread(FileOperation.objects.all)
+
+			files = await asyncio.to_thread(FileOperation.objects.get, receiver=user)
+			return files 
+
+		except FileOperation.DoesNotExist:
+			return Http404("The requested info does not exist")
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to get file operation object: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please try again later"
+			})
+
+	# get file operation data
+	async def get(self, request):
+		try:
+			files = self.get_queryset()
+			serializer = self.serializer_class(files, many=True if isinstance(files, list) else False)
+
+			return Response({
+				"status": "success",
+				"status_code": status.HTTP_200_OK,
+				"details": "Info fetched.",
+				"data": serializer.data
+			})
+
+		except Exception as e:
+			logger.error(f"An error occurred when trying to get file operation info: {e}", exc_info=True)
+			return Response({
+				"status": "error",
+				"status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+				"details": "An error occurred. Please trying again later."
+			})
+
