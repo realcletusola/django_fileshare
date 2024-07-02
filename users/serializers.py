@@ -87,6 +87,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 # file serializer
 class FileSerializer(serializers.ModelSerializer):
 	user = serializers.CharField(required=False) # this returns string value of user object
+	file = serializers.FileField(required=True)
 
 	class Meta:
 		model = File 
@@ -97,10 +98,53 @@ class FileSerializer(serializers.ModelSerializer):
 class FileOperationSerializer(serializers.ModelSerializer):
 	file = serializers.CharField(required=False) # this returns string value of file object
 	sender = serializers.CharField(required=False) # this returns string value of user object
-	reciever = serializers.CharField(required=False) # this returns string value of user object
+	receiver = serializers.CharField(required=False) # this returns string value of user object
 
 	class Meta:
 		model = File
-		fields = ['id', 'file', 'sender', 'reciever', 'operation', 'date']
+		fields = ['id', 'file', 'sender', 'receiver', 'date']
+
+
+	# validate data 
+	def validate(self, data):
+		errors = {}
+		# this gets the file 'id' which is sent with the data  
+		file = self.data.get('file')
+		receiver = self.data.get('receiver')
+
+		check_receiver = User.objects.get(Q(username__iexact=receiver) | Q(email__iexact=receiver))
+		check_file = File.objects.get(id=file)
+
+		if not check_receiver.exists():
+			errors["receiver_id"] = f"The receiver id {receiver} does not match any account."
+
+		if not check_file.exists():
+			errors["file_id"] = "The file you request does not exist". 
+
+		if errors:
+			raise serializers.ValidationError(errors)
+
+		return data 
+
+
+	# create file operation object 
+	def create(self, validated_data):
+		user = self.context['request'].user 
+		file = self.validated_data['file']
+		receiver = self.validated_data['receiver']
+
+		check_receiver = User.objects.get(Q(username__iexact=receiver) | Q(email__iexact=receiver))
+		check_file = File.objects.get(id=file)
+
+		file_operation = FileOperation.objects.create(
+			file = check_file,
+			sender = user,
+			receiver = check_receiver 
+		)
+		file_operation.save()
+
+		return file_operation
+
+
 
 
