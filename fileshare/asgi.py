@@ -1,6 +1,6 @@
 import os
 from django.core.asgi import get_asgi_application
-from .middleware import DatabaseMiddleware # DatabaseMiddleware from middleware.py
+from .middlewares import DatabaseMiddleware # DatabaseMiddleware from middleware.py
 
 
 
